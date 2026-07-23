@@ -152,6 +152,24 @@
     }
 
     .form-group { display: flex; flex-direction: column; }
+    .form-group.full-width { grid-column: 1 / -1; }
+
+    .form-subhead {
+        grid-column: 1 / -1;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-soft);
+        margin-top: 0.4rem;
+        padding-top: 0.9rem;
+        border-top: 1px dashed var(--border);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .form-grid > .form-subhead:first-child { border-top: none; padding-top: 0; margin-top: 0; }
 
     .form-group label {
         font-size: 0.72rem;
@@ -230,6 +248,9 @@
         margin-bottom: 1.25rem;
         padding-bottom: 0.9rem;
         border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.2rem 0;
     }
 
     .report-meta strong { color: var(--ink); font-weight: 600; }
@@ -373,7 +394,7 @@
             Registro de crescimento · 0–12 meses
         </span>
         <h1>Ganho Ponderal</h1>
-        <p>Compare o peso registrado com a faixa esperada pelas curvas da OMS e da SBP para a idade da criança.</p>
+        <p>Compare o peso da consulta atual com o da consulta anterior, considerando a faixa esperada de ganho para a idade da criança.</p>
     </header>
 
     <main>
@@ -382,23 +403,32 @@
             <h2 class="card-title">Dados de entrada</h2>
 
             <div class="form-grid">
-                <div class="form-group">
-                    <label for="nascimento-data">Nascimento</label>
+                <div class="form-group full-width">
+                    <label for="nascimento-data">Data de nascimento</label>
                     <input type="date" id="nascimento-data" class="form-control" required>
                 </div>
 
+                <div class="form-subhead">🍼 Consulta anterior</div>
+
                 <div class="form-group">
-                    <label for="nascimento-peso">Peso ao nascer (kg)</label>
-                    <input type="number" id="nascimento-peso" class="form-control" step="0.001" min="0.5" max="10" placeholder="3.200" required>
+                    <label for="anterior-data">Data da consulta</label>
+                    <input type="date" id="anterior-data" class="form-control" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="atual-data">Pesagem atual</label>
+                    <label for="anterior-peso">Peso registrado (kg)</label>
+                    <input type="number" id="anterior-peso" class="form-control" step="0.001" min="0.5" max="25" placeholder="5.800" required>
+                </div>
+
+                <div class="form-subhead">📋 Consulta atual</div>
+
+                <div class="form-group">
+                    <label for="atual-data">Data da consulta</label>
                     <input type="date" id="atual-data" class="form-control" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="atual-peso">Peso atual (kg)</label>
+                    <label for="atual-peso">Peso registrado (kg)</label>
                     <input type="number" id="atual-peso" class="form-control" step="0.001" min="0.5" max="25" placeholder="6.450" required>
                 </div>
             </div>
@@ -413,15 +443,17 @@
             <div class="chart-wrap">
                 <div id="chart-container"></div>
                 <div class="chart-legend">
-                    <span><i class="swatch" style="background: var(--border);"></i>Faixa esperada</span>
+                    <span><i class="swatch" style="background: var(--border);"></i>Faixa esperada no período</span>
                     <span><i class="swatch" style="background: var(--ink);"></i>Trajetória observada</span>
                 </div>
             </div>
 
             <p class="report-meta">
-                <strong>Idade:</strong> <span id="res-idade-detalhada">–</span> <span id="res-idade-dias">(– dias)</span>
+                <strong>Idade na consulta atual:</strong>&nbsp;<span id="res-idade-detalhada">–</span>
                 <span class="sep">·</span>
-                <strong>Faixa etária:</strong> <span id="res-faixa">–</span>
+                <strong>Intervalo entre consultas:</strong>&nbsp;<span id="res-intervalo">–</span>
+                <span class="sep">·</span>
+                <strong>Faixa etária:</strong>&nbsp;<span id="res-faixa">–</span>
             </p>
 
             <div class="table-scroll">
@@ -437,13 +469,13 @@
                     <tbody>
                         <tr>
                             <td>
-                                <span class="metric-name">Ganho total</span>
-                                <span class="metric-sub">Desde o nascimento</span>
+                                <span class="metric-name">Ganho no período</span>
+                                <span class="metric-sub">Desde a consulta anterior</span>
                             </td>
                             <td><span class="stat-primary" id="res-ganho-real">–</span></td>
                             <td>
                                 <span class="stat-primary" id="res-ganho-esperado">–</span>
-                                <span class="stat-secondary">acumulado</span>
+                                <span class="stat-secondary">para o intervalo</span>
                             </td>
                             <td class="situacao-cell" id="situacao-total">–</td>
                         </tr>
@@ -455,7 +487,7 @@
                             <td><span class="stat-primary" id="res-ganho-dia-real">–</span></td>
                             <td>
                                 <span class="stat-primary" id="res-ganho-dia-esperado">–</span>
-                                <span class="stat-secondary">faixa etária atual</span>
+                                <span class="stat-secondary">faixa etária no período</span>
                             </td>
                             <td class="situacao-cell" id="situacao-daily">–</td>
                         </tr>
@@ -491,7 +523,7 @@
         document.getElementById('atual-data').value = today;
     });
 
-    // Ganho esperado acumulado (g) até um determinado dia de vida
+    // Ganho esperado acumulado (g) desde o nascimento (dia 0) até um determinado dia de vida
     function expectedGainAtDay(day) {
         let remaining = Math.max(day, 0);
         let minG = 0, maxG = 0;
@@ -508,21 +540,33 @@
         return { min: minG / 1000, max: maxG / 1000 };
     }
 
-    function buildChart(bWeight, cWeight, diffDays, status) {
+    // Ganho esperado (kg) apenas no intervalo entre dois dias de vida (dayA -> dayB)
+    function expectedGainInterval(dayA, dayB) {
+        const a = expectedGainAtDay(dayA);
+        const b = expectedGainAtDay(dayB);
+        return { min: b.min - a.min, max: b.max - a.max };
+    }
+
+    function diffInDays(dateA, dateB) {
+        const msPerDay = 1000 * 60 * 60 * 24;
+        return Math.floor((dateB - dateA) / msPerDay);
+    }
+
+    function buildChart(prevWeight, currWeight, diasAnterior, intervalDays, status) {
         const container = document.getElementById('chart-container');
         const W = 620, H = 220, padL = 44, padR = 16, padT = 16, padB = 30;
         const plotW = W - padL - padR, plotH = H - padT - padB;
 
-        const totalDays = Math.max(diffDays, 1);
+        const totalDays = Math.max(intervalDays, 1);
         const samples = 24;
         const points = [];
         for (let i = 0; i <= samples; i++) {
             const t = (totalDays * i) / samples;
-            const g = expectedGainAtDay(t);
-            points.push({ t, min: bWeight + g.min, max: bWeight + g.max });
+            const g = expectedGainInterval(diasAnterior, diasAnterior + t);
+            points.push({ t, min: prevWeight + g.min, max: prevWeight + g.max });
         }
 
-        const allY = points.flatMap(p => [p.min, p.max]).concat([bWeight, cWeight]);
+        const allY = points.flatMap(p => [p.min, p.max]).concat([prevWeight, currWeight]);
         let yMin = Math.min(...allY), yMax = Math.max(...allY);
         const pad = (yMax - yMin) * 0.12 || 0.3;
         yMin -= pad; yMax += pad;
@@ -536,13 +580,15 @@
 
         const lineColor = status === 'red' ? 'var(--risk-line)' : status === 'yellow' ? 'var(--warn-line)' : 'var(--ok-line)';
 
-        // grid + month ticks
+        // grid + ticks (semanas se o intervalo for curto, meses se for longo)
         let ticks = '';
-        const monthStep = 30;
-        for (let d = 0; d <= totalDays; d += monthStep) {
+        const tickStep = totalDays > 70 ? 30 : 7;
+        const tickUnit = totalDays > 70 ? 'm' : 'sem';
+        for (let d = 0; d <= totalDays; d += tickStep) {
             const xt = x(d);
+            const label = totalDays > 70 ? Math.round(d / 30) : Math.round(d / 7);
             ticks += `<line x1="${xt}" y1="${padT}" x2="${xt}" y2="${padT + plotH}" stroke="var(--grid-line)" stroke-width="1" />`;
-            ticks += `<text x="${xt}" y="${H - 10}" font-size="9" font-family="IBM Plex Mono, monospace" fill="var(--muted)" text-anchor="middle">${Math.round(d/30)}m</text>`;
+            ticks += `<text x="${xt}" y="${H - 10}" font-size="9" font-family="IBM Plex Mono, monospace" fill="var(--muted)" text-anchor="middle">${label}${tickUnit}</text>`;
         }
 
         const yLabelTop = `<text x="${padL - 8}" y="${y(yMax - pad).toFixed(1)}" font-size="9" font-family="IBM Plex Mono, monospace" fill="var(--muted)" text-anchor="end">${(yMax - pad).toFixed(1)}kg</text>`;
@@ -553,9 +599,9 @@
             <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="#fbfcfb" stroke="var(--grid-line)" />
             ${ticks}
             <path d="${bandPath}" fill="var(--border)" fill-opacity="0.55" stroke="none" />
-            <line x1="${x(0)}" y1="${y(bWeight)}" x2="${x(totalDays)}" y2="${y(cWeight)}" stroke="${lineColor}" stroke-width="2.5" />
-            <circle cx="${x(0)}" cy="${y(bWeight)}" r="4" fill="var(--ink)" />
-            <g transform="translate(${x(totalDays).toFixed(1)}, ${y(cWeight).toFixed(1)})">
+            <line x1="${x(0)}" y1="${y(prevWeight)}" x2="${x(totalDays)}" y2="${y(currWeight)}" stroke="${lineColor}" stroke-width="2.5" />
+            <circle cx="${x(0)}" cy="${y(prevWeight)}" r="4" fill="var(--ink)" />
+            <g transform="translate(${x(totalDays).toFixed(1)}, ${y(currWeight).toFixed(1)})">
                 <path d="M0,-7 L1.8,-2.2 7,-1.7 3,1.6 4.2,6.8 0,4 -4.2,6.8 -3,1.6 -7,-1.7 -1.8,-2.2 Z" fill="${lineColor}" stroke="#fff" stroke-width="1.2" />
             </g>
             ${yLabelTop}
@@ -568,28 +614,36 @@
     document.getElementById('calc-form').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const bDateInput = document.getElementById('nascimento-data').value;
-        const cDateInput = document.getElementById('atual-data').value;
-        const bWeight = parseFloat(document.getElementById('nascimento-peso').value);
-        const cWeight = parseFloat(document.getElementById('atual-peso').value);
+        const nascDateInput = document.getElementById('nascimento-data').value;
+        const prevDateInput = document.getElementById('anterior-data').value;
+        const currDateInput = document.getElementById('atual-data').value;
+        const prevWeight = parseFloat(document.getElementById('anterior-peso').value);
+        const currWeight = parseFloat(document.getElementById('atual-peso').value);
 
-        const bDate = new Date(bDateInput + 'T12:00:00');
-        const cDate = new Date(cDateInput + 'T12:00:00');
+        const nascDate = new Date(nascDateInput + 'T12:00:00');
+        const prevDate = new Date(prevDateInput + 'T12:00:00');
+        const currDate = new Date(currDateInput + 'T12:00:00');
 
-        if (cDate < bDate) {
-            alert("A data da pesagem atual não pode ser anterior à data de nascimento.");
+        if (prevDate < nascDate) {
+            alert("A data da consulta anterior não pode ser anterior à data de nascimento.");
+            return;
+        }
+        if (currDate < prevDate) {
+            alert("A data da consulta atual não pode ser anterior à data da consulta anterior.");
             return;
         }
 
-        const msPerDay = 1000 * 60 * 60 * 24;
-        const diffDays = Math.floor((cDate - bDate) / msPerDay);
+        const diasAnterior = diffInDays(nascDate, prevDate);
+        const diasAtual = diffInDays(nascDate, currDate);
+        const intervalDays = diasAtual - diasAnterior;
 
-        let months = (cDate.getFullYear() - bDate.getFullYear()) * 12 + (cDate.getMonth() - bDate.getMonth());
-        let days = cDate.getDate() - bDate.getDate();
+        // Idade (meses e dias) na consulta atual, em relação ao nascimento
+        let months = (currDate.getFullYear() - nascDate.getFullYear()) * 12 + (currDate.getMonth() - nascDate.getMonth());
+        let days = currDate.getDate() - nascDate.getDate();
 
         if (days < 0) {
             months--;
-            const prevMonth = new Date(cDate.getFullYear(), cDate.getMonth(), 0);
+            const prevMonth = new Date(currDate.getFullYear(), currDate.getMonth(), 0);
             days += prevMonth.getDate();
         }
 
@@ -602,34 +656,36 @@
             alert("Atenção: esta calculadora foi desenhada apenas para o primeiro ano de vida (0 a 12 meses). Os resultados podem não ser precisos para essa idade.");
         }
 
-        const expected = expectedGainAtDay(diffDays);
+        // Ganho esperado apenas no intervalo entre as duas consultas
+        const expected = expectedGainInterval(diasAnterior, diasAtual);
         const minExpectedKg = expected.min;
         const maxExpectedKg = expected.max;
-        const realGainKg = cWeight - bWeight;
+        const realGainKg = currWeight - prevWeight;
 
-        // Ganho médio diário observado
-        const avgDailyGainG = diffDays > 0 ? (realGainKg * 1000) / diffDays : 0;
+        // Ganho médio diário observado no intervalo
+        const avgDailyGainG = intervalDays > 0 ? (realGainKg * 1000) / intervalDays : 0;
 
-        // Faixa esperada de g/dia para a fase atual (0-90d / 91-180d / 181d+)
+        // Faixa esperada de g/dia, baseada na idade no meio do intervalo entre as consultas
+        const midDay = (diasAnterior + diasAtual) / 2;
         let dailyMin, dailyMax, faseDiaLabel;
-        if (diffDays <= 90) { dailyMin = 25; dailyMax = 35; faseDiaLabel = "0–3 meses"; }
-        else if (diffDays <= 180) { dailyMin = 15; dailyMax = 20; faseDiaLabel = "4–6 meses"; }
+        if (midDay <= 90) { dailyMin = 25; dailyMax = 35; faseDiaLabel = "0–3 meses"; }
+        else if (midDay <= 180) { dailyMin = 15; dailyMax = 20; faseDiaLabel = "4–6 meses"; }
         else { dailyMin = 10; dailyMax = 15; faseDiaLabel = "7–12 meses"; }
 
         document.getElementById('res-idade-detalhada').textContent = `${months}m e ${days}d`;
-        document.getElementById('res-idade-dias').textContent = `(${diffDays} dias)`;
+        document.getElementById('res-intervalo').textContent = `${intervalDays} dias`;
         document.getElementById('res-faixa').textContent = faixaStr;
         document.getElementById('res-ganho-real').textContent = `${realGainKg.toFixed(3)} kg`;
-        document.getElementById('res-ganho-esperado').textContent = diffDays === 0
+        document.getElementById('res-ganho-esperado').textContent = intervalDays === 0
             ? "0.000 kg"
             : `${minExpectedKg.toFixed(3)} – ${maxExpectedKg.toFixed(3)} kg`;
-        document.getElementById('res-ganho-dia-real').textContent = diffDays === 0
+        document.getElementById('res-ganho-dia-real').textContent = intervalDays === 0
             ? "–"
             : `${avgDailyGainG.toFixed(1)} g/dia`;
         document.getElementById('res-ganho-dia-esperado').textContent = `${dailyMin}–${dailyMax} g/dia`;
         document.getElementById('res-ganho-dia-esperado-sub').textContent = `Referência: ${faseDiaLabel}`;
 
-        // Situação — ganho total
+        // Situação — ganho no período
         const situacaoTotal = document.getElementById('situacao-total');
         let statusKey = 'green';
         if (realGainKg < minExpectedKg) {
@@ -646,9 +702,9 @@
             situacaoTotal.innerHTML = `Adequado<span class="delta">dentro da faixa</span>`;
         }
 
-        // Situação — ritmo diário (pode divergir do status total)
+        // Situação — ritmo diário (pode divergir do status do período)
         const situacaoDaily = document.getElementById('situacao-daily');
-        if (diffDays === 0) {
+        if (intervalDays === 0) {
             situacaoDaily.className = 'situacao-cell';
             situacaoDaily.textContent = '–';
         } else if (avgDailyGainG < dailyMin) {
@@ -672,20 +728,20 @@
             banner.classList.add('status-red');
             stamp.innerHTML = '<span class="emoji">🌧️</span>Abaixo';
             title.textContent = "Abaixo do esperado";
-            desc.textContent = `O ganho real está ${(minExpectedKg - realGainKg).toFixed(3)} kg abaixo do limiar mínimo.`;
+            desc.textContent = `No período entre as consultas, o ganho real ficou ${(minExpectedKg - realGainKg).toFixed(3)} kg abaixo do limiar mínimo.`;
         } else if (statusKey === 'yellow') {
             banner.classList.add('status-yellow');
             stamp.innerHTML = '<span class="emoji">☀️</span>Acima';
             title.textContent = "Acima do esperado";
-            desc.textContent = `O ganho real está ${(realGainKg - maxExpectedKg).toFixed(3)} kg acima do limiar máximo estabelecido.`;
+            desc.textContent = `No período entre as consultas, o ganho real ficou ${(realGainKg - maxExpectedKg).toFixed(3)} kg acima do limiar máximo estabelecido.`;
         } else {
             banner.classList.add('status-green');
             stamp.innerHTML = '<span class="emoji">🌟</span>Adequado';
             title.textContent = "Dentro do esperado";
-            desc.textContent = "O ganho ponderal da criança está adequado para o tempo cronológico.";
+            desc.textContent = "O ganho ponderal da criança entre as duas consultas está adequado para o período.";
         }
 
-        buildChart(bWeight, cWeight, diffDays, statusKey);
+        buildChart(prevWeight, currWeight, diasAnterior, intervalDays, statusKey);
 
         document.getElementById('results-section').style.display = 'block';
         document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
