@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Ganho Ponderal Infantil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --paper: #f1f5f3;
+        --grid-line: #dbe6e1;
+        --ink: #1c4b52;
+        --ink-soft: #4a6a68;
+        --muted: #6c7c78;
+        --surface: #ffffff;
+        --border: #dde5e1;
+        --focus-ring: rgba(28, 75, 82, 0.28);
+
+        --ok-bg: #e7f1e6;
+        --ok-text: #345c3a;
+        --ok-border: #b9d6b6;
+        --ok-line: #5c8a5f;
+
+        --warn-bg: #fbf2df;
+        --warn-text: #7a5420;
+        --warn-border: #ecd6a3;
+        --warn-line: #b9832f;
+
+        --risk-bg: #fbeae6;
+        --risk-text: #7a352a;
+        --risk-border: #eebfb3;
+        --risk-line: #a8493a;
+
+        --pastel-blue: #9cc5d1;
+        --pastel-pink: #e8b4c4;
+        --pastel-yellow: #f0cf85;
+        --pastel-mint: #a8cfb4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: 'IBM Plex Sans', sans-serif;
+        background-color: var(--paper);
+        background-image:
+            linear-gradient(var(--grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        color: var(--ink);
+        line-height: 1.5;
+        padding: 2.5rem 1rem 3rem;
+        display: flex;
+        justify-content: center;
+    }
+
+    .container { max-width: 700px; width: 100%; }
+
+    .header {
+        margin-bottom: 1.75rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 2px solid var(--ink);
+        position: relative;
+        overflow: visible;
+    }
+
+    .header-doodle {
+        position: absolute;
+        top: -0.75rem;
+        right: -0.25rem;
+        opacity: 0.9;
+    }
+
+    .footprints {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        vertical-align: -6px;
+        margin-right: 0.4rem;
+    }
+
+    .header .eyebrow {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .header h1 {
+        font-family: 'Fraunces', serif;
+        font-optical-sizing: auto;
+        color: var(--ink);
+        font-size: clamp(1.75rem, 5vw, 2.35rem);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.1;
+    }
+
+    .header p {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-top: 0.4rem;
+        max-width: 46ch;
+    }
+
+    .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(28, 75, 82, 0.06);
+        padding: 1.75rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-corner {
+        position: absolute;
+        top: 0.6rem;
+        right: 0.75rem;
+        opacity: 0.55;
+    }
+
+    .card-title {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--ink-soft);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .card-title::after {
+        content: "";
+        flex: 1;
+        height: 0;
+        border-top: 2px dotted var(--pastel-blue);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem 1.5rem;
+    }
+
+    .form-group { display: flex; flex-direction: column; }
+
+    .form-group label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        margin-bottom: 0.45rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .form-control {
+        padding: 0.7rem 0.75rem;
+        border: 1px solid var(--border);
+        border-bottom: 2px solid var(--ink-soft);
+        border-radius: 2px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.95rem;
+        color: var(--ink);
+        background-color: #fbfcfb;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--ink);
+        box-shadow: 0 0 0 3px var(--focus-ring);
+        background-color: var(--surface);
+    }
+
+    .btn {
+        background-color: var(--ink);
+        color: #f1f5f3;
+        border: none;
+        border-radius: 999px;
+        padding: 0.9rem;
+        font-family: 'IBM Plex Sans', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        width: 100%;
+        transition: background-color 0.15s, transform 0.1s;
+        margin-top: 1.6rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn:hover { background-color: #0f333a; }
+    .btn:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+    #results-section { display: none; }
+
+    /* Growth chart — the signature element */
+    .chart-wrap { margin-bottom: 1.5rem; }
+
+    .chart-legend {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.75rem;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.7rem;
+        color: var(--muted);
+        flex-wrap: wrap;
+    }
+
+    .chart-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+    .report-meta {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.9rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .report-meta strong { color: var(--ink); font-weight: 600; }
+    .report-meta .sep { color: var(--border); margin: 0 0.6rem; }
+
+    .table-scroll { overflow-x: auto; margin-bottom: 0.5rem; }
+
+    .report-table {
+        width: 100%;
+        min-width: 480px;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .report-table thead th {
+        text-align: left;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        font-weight: 600;
+        padding: 0 0.75rem 0.6rem 0;
+        border-bottom: 2px solid var(--ink);
+    }
+
+    .report-table thead th:not(:first-child) { text-align: right; }
+
+    .report-table tbody td {
+        padding: 0.9rem 0.75rem 0.9rem 0;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+    }
+
+    .report-table tbody td:not(:first-child) {
+        text-align: right;
+        font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .report-table tbody tr:last-child td { border-bottom: none; }
+
+    .metric-name { font-weight: 600; color: var(--ink); }
+    .metric-sub { display: block; font-size: 0.72rem; color: var(--muted); font-weight: 400; margin-top: 0.2rem; }
+
+    .stat-primary { font-size: 1.02rem; font-weight: 600; color: var(--ink); }
+    .stat-secondary { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+
+    .situacao-cell { font-weight: 600; }
+    .situacao-cell .delta { display: block; font-size: 0.72rem; font-weight: 400; margin-top: 0.2rem; opacity: 0.85; }
+    .situacao-ok { color: var(--ok-text); }
+    .situacao-warn { color: var(--warn-text); }
+    .situacao-risk { color: var(--risk-text); }
+
+    /* Status stamp */
+    .status-banner {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        border: 1px dashed;
+    }
+
+    .status-stamp {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border: 2px solid currentColor;
+        border-radius: 999px;
+        padding: 0.5rem 0.3rem;
+        text-align: center;
+        line-height: 1.2;
+        transform: rotate(-4deg);
+        width: 4.6rem;
+        flex-shrink: 0;
+        background: rgba(255,255,255,0.5);
+    }
+
+    .status-stamp .emoji { font-size: 1.2rem; display: block; margin-bottom: 0.15rem; }
+
+    .status-text { flex: 1; }
+
+    .status-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.2rem; font-family: 'IBM Plex Sans', sans-serif; }
+    .status-desc { font-size: 0.85rem; }
+
+    .status-green { background-color: var(--ok-bg); border-color: var(--ok-border); color: var(--ok-text); }
+    .status-yellow { background-color: var(--warn-bg); border-color: var(--warn-border); color: var(--warn-text); }
+    .status-red { background-color: var(--risk-bg); border-color: var(--risk-border); color: var(--risk-text); }
+
+    .footer-disclaimer {
+        margin-top: 2rem;
+        font-size: 0.72rem;
+        color: var(--muted);
+        border-top: 1px solid var(--border);
+        padding-top: 1rem;
+    }
+
+    .footer-disclaimer strong { color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+
+    .footer-disclaimer ul {
+        padding-left: 1.1rem;
+        margin-top: 0.6rem;
+        list-style-type: none;
+        color: var(--muted);
+    }
+    .footer-disclaimer li { margin-bottom: 0.4rem; padding-left: 0.9rem; position: relative; }
+    .footer-disclaimer li::before { content: "—"; position: absolute; left: 0; }
+
+    @media (max-width: 600px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .report-meta .sep { display: block; margin: 0.2rem 0 0; }
+        .status-stamp { display: none; }
+    }
+
+    @media print {
+        body { background: white; padding: 0; background-image: none; }
+        .card { box-shadow: none; border: 1px solid #000; }
+        .btn { display: none; }
+        .status-green, .status-yellow, .status-red { border-width: 2px; background-color: transparent !important; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <header class="header">
+        <svg class="header-doodle" width="86" height="52" viewBox="0 0 86 52" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M8 30c-2-4-1-9 3-10s7 3 6 7-4 8-9 3z" fill="var(--pastel-yellow)" opacity="0.8"/>
+            <circle cx="34" cy="10" r="3.4" fill="var(--pastel-pink)" opacity="0.85"/>
+            <circle cx="46" cy="6" r="2" fill="var(--pastel-blue)" opacity="0.85"/>
+            <path d="M62 22c4-6 12-6 15 0 2 4-1 8-6 8-3 0-4-2-4-4" stroke="var(--pastel-mint)" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.85"/>
+            <path d="M30 8l1.6 3.4 3.7.4-2.7 2.6.7 3.6L30 16.2 26.7 18l.7-3.6-2.7-2.6 3.7-.4z" fill="var(--pastel-pink)" opacity="0.5"/>
+        </svg>
+        <span class="eyebrow">
+            <span class="footprints" aria-hidden="true">
+                <svg width="14" height="18" viewBox="0 0 14 18"><ellipse cx="7" cy="12" rx="4.5" ry="6" fill="var(--pastel-blue)"/><circle cx="3.5" cy="3.5" r="1.6" fill="var(--pastel-blue)"/><circle cx="7.2" cy="2" r="1.6" fill="var(--pastel-blue)"/><circle cx="10.6" cy="3.2" r="1.4" fill="var(--pastel-blue)"/></svg>
+                <svg width="14" height="18" viewBox="0 0 14 18" style="margin-left:-2px; transform: translateY(6px);"><ellipse cx="7" cy="12" rx="4.5" ry="6" fill="var(--pastel-pink)"/><circle cx="3.5" cy="3.5" r="1.6" fill="var(--pastel-pink)"/><circle cx="7.2" cy="2" r="1.6" fill="var(--pastel-pink)"/><circle cx="10.6" cy="3.2" r="1.4" fill="var(--pastel-pink)"/></svg>
+            </span>
+            Registro de crescimento · 0–12 meses
+        </span>
+        <h1>Ganho Ponderal</h1>
+        <p>Compare o peso registrado com a faixa esperada pelas curvas da OMS e da SBP para a idade da criança.</p>
+    </header>
+
+    <main>
+        <form id="calc-form" class="card">
+            <svg class="card-corner" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 2l2.7 6.1 6.6.7-5 4.5 1.4 6.5L13 16.5 7.3 19.8l1.4-6.5-5-4.5 6.6-.7z" fill="var(--pastel-yellow)"/></svg>
+            <h2 class="card-title">Dados de entrada</h2>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="nascimento-data">Nascimento</label>
+                    <input type="date" id="nascimento-data" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="nascimento-peso">Peso ao nascer (kg)</label>
+                    <input type="number" id="nascimento-peso" class="form-control" step="0.001" min="0.5" max="10" placeholder="3.200" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="atual-data">Pesagem atual</label>
+                    <input type="date" id="atual-data" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="atual-peso">Peso atual (kg)</label>
+                    <input type="number" id="atual-peso" class="form-control" step="0.001" min="0.5" max="25" placeholder="6.450" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn">🍼 Registrar e calcular</button>
+        </form>
+
+        <div id="results-section" class="card">
+            <svg class="card-corner" width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><path d="M8 18c-4 0-6-3-5-6 1-2.5 3-3 4.5-2.3C8.2 6.8 11 5 14 6c2.3.8 3 2.7 2.8 4 3-1 6 1 5.7 4-.2 2.5-2.5 4-5 4H8z" fill="var(--pastel-blue)" opacity="0.75"/></svg>
+            <h2 class="card-title">Curva de crescimento</h2>
+
+            <div class="chart-wrap">
+                <div id="chart-container"></div>
+                <div class="chart-legend">
+                    <span><i class="swatch" style="background: var(--border);"></i>Faixa esperada</span>
+                    <span><i class="swatch" style="background: var(--ink);"></i>Trajetória observada</span>
+                </div>
+            </div>
+
+            <p class="report-meta">
+                <strong>Idade:</strong> <span id="res-idade-detalhada">–</span> <span id="res-idade-dias">(– dias)</span>
+                <span class="sep">·</span>
+                <strong>Faixa etária:</strong> <span id="res-faixa">–</span>
+            </p>
+
+            <div class="table-scroll">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Métrica</th>
+                            <th>Observado</th>
+                            <th>Esperado</th>
+                            <th>Situação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="metric-name">Ganho total</span>
+                                <span class="metric-sub">Desde o nascimento</span>
+                            </td>
+                            <td><span class="stat-primary" id="res-ganho-real">–</span></td>
+                            <td>
+                                <span class="stat-primary" id="res-ganho-esperado">–</span>
+                                <span class="stat-secondary">acumulado</span>
+                            </td>
+                            <td class="situacao-cell" id="situacao-total">–</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="metric-name">Ritmo diário</span>
+                                <span class="metric-sub" id="res-ganho-dia-esperado-sub">Referência: –</span>
+                            </td>
+                            <td><span class="stat-primary" id="res-ganho-dia-real">–</span></td>
+                            <td>
+                                <span class="stat-primary" id="res-ganho-dia-esperado">–</span>
+                                <span class="stat-secondary">faixa etária atual</span>
+                            </td>
+                            <td class="situacao-cell" id="situacao-daily">–</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="status-banner" class="status-banner">
+                <div class="status-stamp" id="status-stamp">–</div>
+                <div class="status-text">
+                    <div class="status-title" id="status-title">Status</div>
+                    <div class="status-desc" id="status-desc">Descrição</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer-disclaimer">
+        <p>🧸 <strong>Aviso clínico —</strong> Esta ferramenta é estritamente educacional e de apoio ao cálculo. Não substitui o julgamento clínico presencial do pediatra, a anamnese detalhada e a plotagem correta do paciente nos gráficos padronizados.</p>
+        <br>
+        <p><strong>Referências</strong></p>
+        <ul>
+            <li>World Health Organization (WHO). <em>WHO Child Growth Standards: Length/height-for-age, weight-for-age, weight-for-length, weight-for-height and body mass index-for-age: Methods and development</em>. Geneva: WHO, 2006.</li>
+            <li>Sociedade Brasileira de Pediatria (SBP). Departamento Científico de Nutrologia. <em>Manual de Avaliação Nutricional da Criança e do Adolescente</em>. Rio de Janeiro: SBP, 2009.</li>
+            <li>Ministério da Saúde (BR). Secretaria de Atenção Primária à Saúde. <em>Caderneta da Criança: Passaporte da Cidadania</em>. Brasília: Ministério da Saúde, 2022.</li>
+        </ul>
+    </footer>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('atual-data').value = today;
+    });
+
+    // Ganho esperado acumulado (g) até um determinado dia de vida
+    function expectedGainAtDay(day) {
+        let remaining = Math.max(day, 0);
+        let minG = 0, maxG = 0;
+
+        const daysF1 = Math.min(remaining, 90);
+        minG += daysF1 * 25; maxG += daysF1 * 35; remaining -= daysF1;
+
+        const daysF2 = Math.min(remaining, 90);
+        minG += daysF2 * 15; maxG += daysF2 * 20; remaining -= daysF2;
+
+        const daysF3 = Math.max(remaining, 0);
+        minG += daysF3 * 10; maxG += daysF3 * 15;
+
+        return { min: minG / 1000, max: maxG / 1000 };
+    }
+
+    function buildChart(bWeight, cWeight, diffDays, status) {
+        const container = document.getElementById('chart-container');
+        const W = 620, H = 220, padL = 44, padR = 16, padT = 16, padB = 30;
+        const plotW = W - padL - padR, plotH = H - padT - padB;
+
+        const totalDays = Math.max(diffDays, 1);
+        const samples = 24;
+        const points = [];
+        for (let i = 0; i <= samples; i++) {
+            const t = (totalDays * i) / samples;
+            const g = expectedGainAtDay(t);
+            points.push({ t, min: bWeight + g.min, max: bWeight + g.max });
+        }
+
+        const allY = points.flatMap(p => [p.min, p.max]).concat([bWeight, cWeight]);
+        let yMin = Math.min(...allY), yMax = Math.max(...allY);
+        const pad = (yMax - yMin) * 0.12 || 0.3;
+        yMin -= pad; yMax += pad;
+
+        const x = t => padL + (t / totalDays) * plotW;
+        const y = v => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+
+        const topPath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(p.t).toFixed(1)} ${y(p.max).toFixed(1)}`).join(' ');
+        const bottomPath = points.slice().reverse().map(p => `L ${x(p.t).toFixed(1)} ${y(p.min).toFixed(1)}`).join(' ');
+        const bandPath = `${topPath} ${bottomPath} Z`;
+
+        const lineColor = status === 'red' ? 'var(--risk-line)' : status === 'yellow' ? 'var(--warn-line)' : 'var(--ok-line)';
+
+        // grid + month ticks
+        let ticks = '';
+        const monthStep = 30;
+        for (let d = 0; d <= totalDays; d += monthStep) {
+            const xt = x(d);
+            ticks += `<line x1="${xt}" y1="${padT}" x2="${xt}" y2="${padT + plotH}" stroke="var(--grid-line)" stroke-width="1" />`;
+            ticks += `<text x="${xt}" y="${H - 10}" font-size="9" font-family="IBM Plex Mono, monospace" fill="var(--muted)" text-anchor="middle">${Math.round(d/30)}m</text>`;
+        }
+
+        const yLabelTop = `<text x="${padL - 8}" y="${y(yMax - pad).toFixed(1)}" font-size="9" font-family="IBM Plex Mono, monospace" fill="var(--muted)" text-anchor="end">${(yMax - pad).toFixed(1)}kg</text>`;
+        const yLabelBottom = `<text x="${padL - 8}" y="${y(yMin + pad).toFixed(1)}" font-size="9" font-family="IBM Plex Mono, monospace" fill="var(--muted)" text-anchor="end">${(yMin + pad).toFixed(1)}kg</text>`;
+
+        const svg = `
+        <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block; overflow: visible;">
+            <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="#fbfcfb" stroke="var(--grid-line)" />
+            ${ticks}
+            <path d="${bandPath}" fill="var(--border)" fill-opacity="0.55" stroke="none" />
+            <line x1="${x(0)}" y1="${y(bWeight)}" x2="${x(totalDays)}" y2="${y(cWeight)}" stroke="${lineColor}" stroke-width="2.5" />
+            <circle cx="${x(0)}" cy="${y(bWeight)}" r="4" fill="var(--ink)" />
+            <g transform="translate(${x(totalDays).toFixed(1)}, ${y(cWeight).toFixed(1)})">
+                <path d="M0,-7 L1.8,-2.2 7,-1.7 3,1.6 4.2,6.8 0,4 -4.2,6.8 -3,1.6 -7,-1.7 -1.8,-2.2 Z" fill="${lineColor}" stroke="#fff" stroke-width="1.2" />
+            </g>
+            ${yLabelTop}
+            ${yLabelBottom}
+        </svg>`;
+
+        container.innerHTML = svg;
+    }
+
+    document.getElementById('calc-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const bDateInput = document.getElementById('nascimento-data').value;
+        const cDateInput = document.getElementById('atual-data').value;
+        const bWeight = parseFloat(document.getElementById('nascimento-peso').value);
+        const cWeight = parseFloat(document.getElementById('atual-peso').value);
+
+        const bDate = new Date(bDateInput + 'T12:00:00');
+        const cDate = new Date(cDateInput + 'T12:00:00');
+
+        if (cDate < bDate) {
+            alert("A data da pesagem atual não pode ser anterior à data de nascimento.");
+            return;
+        }
+
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const diffDays = Math.floor((cDate - bDate) / msPerDay);
+
+        let months = (cDate.getFullYear() - bDate.getFullYear()) * 12 + (cDate.getMonth() - bDate.getMonth());
+        let days = cDate.getDate() - bDate.getDate();
+
+        if (days < 0) {
+            months--;
+            const prevMonth = new Date(cDate.getFullYear(), cDate.getMonth(), 0);
+            days += prevMonth.getDate();
+        }
+
+        let faixaStr = "";
+        if (months < 4) faixaStr = "0 a 3 meses";
+        else if (months < 7) faixaStr = "4 a 6 meses";
+        else faixaStr = "7 a 12 meses";
+
+        if (months >= 12) {
+            alert("Atenção: esta calculadora foi desenhada apenas para o primeiro ano de vida (0 a 12 meses). Os resultados podem não ser precisos para essa idade.");
+        }
+
+        const expected = expectedGainAtDay(diffDays);
+        const minExpectedKg = expected.min;
+        const maxExpectedKg = expected.max;
+        const realGainKg = cWeight - bWeight;
+
+        // Ganho médio diário observado
+        const avgDailyGainG = diffDays > 0 ? (realGainKg * 1000) / diffDays : 0;
+
+        // Faixa esperada de g/dia para a fase atual (0-90d / 91-180d / 181d+)
+        let dailyMin, dailyMax, faseDiaLabel;
+        if (diffDays <= 90) { dailyMin = 25; dailyMax = 35; faseDiaLabel = "0–3 meses"; }
+        else if (diffDays <= 180) { dailyMin = 15; dailyMax = 20; faseDiaLabel = "4–6 meses"; }
+        else { dailyMin = 10; dailyMax = 15; faseDiaLabel = "7–12 meses"; }
+
+        document.getElementById('res-idade-detalhada').textContent = `${months}m e ${days}d`;
+        document.getElementById('res-idade-dias').textContent = `(${diffDays} dias)`;
+        document.getElementById('res-faixa').textContent = faixaStr;
+        document.getElementById('res-ganho-real').textContent = `${realGainKg.toFixed(3)} kg`;
+        document.getElementById('res-ganho-esperado').textContent = diffDays === 0
+            ? "0.000 kg"
+            : `${minExpectedKg.toFixed(3)} – ${maxExpectedKg.toFixed(3)} kg`;
+        document.getElementById('res-ganho-dia-real').textContent = diffDays === 0
+            ? "–"
+            : `${avgDailyGainG.toFixed(1)} g/dia`;
+        document.getElementById('res-ganho-dia-esperado').textContent = `${dailyMin}–${dailyMax} g/dia`;
+        document.getElementById('res-ganho-dia-esperado-sub').textContent = `Referência: ${faseDiaLabel}`;
+
+        // Situação — ganho total
+        const situacaoTotal = document.getElementById('situacao-total');
+        let statusKey = 'green';
+        if (realGainKg < minExpectedKg) {
+            statusKey = 'red';
+            situacaoTotal.className = 'situacao-cell situacao-risk';
+            situacaoTotal.innerHTML = `Abaixo<span class="delta">−${(minExpectedKg - realGainKg).toFixed(3)} kg</span>`;
+        } else if (realGainKg > maxExpectedKg) {
+            statusKey = 'yellow';
+            situacaoTotal.className = 'situacao-cell situacao-warn';
+            situacaoTotal.innerHTML = `Acima<span class="delta">+${(realGainKg - maxExpectedKg).toFixed(3)} kg</span>`;
+        } else {
+            statusKey = 'green';
+            situacaoTotal.className = 'situacao-cell situacao-ok';
+            situacaoTotal.innerHTML = `Adequado<span class="delta">dentro da faixa</span>`;
+        }
+
+        // Situação — ritmo diário (pode divergir do status total)
+        const situacaoDaily = document.getElementById('situacao-daily');
+        if (diffDays === 0) {
+            situacaoDaily.className = 'situacao-cell';
+            situacaoDaily.textContent = '–';
+        } else if (avgDailyGainG < dailyMin) {
+            situacaoDaily.className = 'situacao-cell situacao-risk';
+            situacaoDaily.innerHTML = `Abaixo<span class="delta">−${(dailyMin - avgDailyGainG).toFixed(1)} g/dia</span>`;
+        } else if (avgDailyGainG > dailyMax) {
+            situacaoDaily.className = 'situacao-cell situacao-warn';
+            situacaoDaily.innerHTML = `Acima<span class="delta">+${(avgDailyGainG - dailyMax).toFixed(1)} g/dia</span>`;
+        } else {
+            situacaoDaily.className = 'situacao-cell situacao-ok';
+            situacaoDaily.innerHTML = `Adequado<span class="delta">dentro da faixa</span>`;
+        }
+
+        const banner = document.getElementById('status-banner');
+        const stamp = document.getElementById('status-stamp');
+        const title = document.getElementById('status-title');
+        const desc = document.getElementById('status-desc');
+        banner.className = 'status-banner';
+
+        if (statusKey === 'red') {
+            banner.classList.add('status-red');
+            stamp.innerHTML = '<span class="emoji">🌧️</span>Abaixo';
+            title.textContent = "Abaixo do esperado";
+            desc.textContent = `O ganho real está ${(minExpectedKg - realGainKg).toFixed(3)} kg abaixo do limiar mínimo.`;
+        } else if (statusKey === 'yellow') {
+            banner.classList.add('status-yellow');
+            stamp.innerHTML = '<span class="emoji">☀️</span>Acima';
+            title.textContent = "Acima do esperado";
+            desc.textContent = `O ganho real está ${(realGainKg - maxExpectedKg).toFixed(3)} kg acima do limiar máximo estabelecido.`;
+        } else {
+            banner.classList.add('status-green');
+            stamp.innerHTML = '<span class="emoji">🌟</span>Adequado';
+            title.textContent = "Dentro do esperado";
+            desc.textContent = "O ganho ponderal da criança está adequado para o tempo cronológico.";
+        }
+
+        buildChart(bWeight, cWeight, diffDays, statusKey);
+
+        document.getElementById('results-section').style.display = 'block';
+        document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+</script>
+</body>
+</html>
